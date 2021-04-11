@@ -6,7 +6,7 @@ import os
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'zoo_service.sqlite')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://myk_user:fwQH-totF8Pv@localhost:3306/lab6'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 
