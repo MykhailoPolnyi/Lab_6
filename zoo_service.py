@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
+from sqlalchemy import update
 
 
 app = Flask(__name__)
@@ -19,7 +20,9 @@ class Fish(db.Model):
     required_temperature = db.Column(db.Integer)
     required_lighting_level = db.Column(db.String(20))
 
-    def __init__(self, weight, thermoregulation, lifetime, fish_type, req_aq_capacity, req_temperature, req_lighting_lvl):
+    def __init__(
+            self, weight, thermoregulation, lifetime, fish_type, req_aq_capacity, req_temperature, req_lighting_lvl
+    ):
         self.weight_in_kg = weight
         self.thermoregulation = thermoregulation
         self.lifetime_years = lifetime
@@ -82,23 +85,11 @@ def add_fish():
 
 @app.route('/fish/<id>', methods=['PUT'])
 def update_fish(id):
-    def try_upd(updated_obj, updated_param):
-        try:
-            new_value = request.json[updated_param]
-            setattr(updated_obj, updated_param, new_value)
-        except KeyError:
-            pass
+
     fish = Fish.query.get(id)
-    try_upd(fish, 'weight_in_kg')
-    try_upd(fish, 'thermoregulation')
-    try_upd(fish, 'lifetime_years')
-    try_upd(fish, 'animal_type')
-    try_upd(fish, 'required_aquarium_capacity_liters')
-    try_upd(fish, 'required_temperature')
-    try_upd(fish, 'required_lighting_level')
-
+    for param in request.json:
+        setattr(fish, param, request.json[param])
     db.session.commit()
-
     return fish_schema.jsonify(fish)
 
 
