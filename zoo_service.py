@@ -1,8 +1,7 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
-from sqlalchemy import update
-
+from marshmallow import fields
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://myk_user:fwQH-totF8Pv@localhost:3306/lab6'
@@ -21,23 +20,26 @@ class Fish(db.Model):
     required_lighting_level = db.Column(db.String(20))
 
     def __init__(
-            self, weight, thermoregulation, lifetime, fish_type, req_aq_capacity, req_temperature, req_lighting_lvl
+            self, weight_in_kg, thermoregulation, lifetime_years, animal_type,
+            required_aquarium_capacity_liters, required_temperature, required_lighting_level
     ):
-        self.weight_in_kg = weight
+        self.weight_in_kg = weight_in_kg
         self.thermoregulation = thermoregulation
-        self.lifetime_years = lifetime
-        self.animal_type = fish_type
-        self.required_aquarium_capacity_liters = req_aq_capacity
-        self.required_temperature = req_temperature
-        self.required_lighting_level = req_lighting_lvl
+        self.lifetime_years = lifetime_years
+        self.animal_type = animal_type
+        self.required_aquarium_capacity_liters = required_aquarium_capacity_liters
+        self.required_temperature = required_temperature
+        self.required_lighting_level = required_lighting_level
 
 
 class FishSchema(ma.Schema):
-    class Meta:
-        fields = (
-            'weight_in_kg', 'thermoregulation', 'lifetime_years', 'animal_type',
-            'required_aquarium_capacity_liters', 'required_temperature', 'required_lighting_level'
-        )
+    weight_in_kg = fields.Float()
+    thermoregulation = fields.String()
+    lifetime_years = fields.Float()
+    animal_type = fields.String()
+    required_aquarium_capacity_liters = fields.Integer()
+    required_temperature = fields.Integer()
+    required_lighting_level = fields.String()
 
 
 fish_schema = FishSchema()
@@ -52,31 +54,23 @@ def hello_page():
 @app.route('/fish', methods=['GET'])
 def get_all_fish():
     all_fish = Fish.query.all()
-    result = fishes_schema.dump(all_fish)
-    return jsonify(result)
+    if all_fish is None:
+        abort(404)
+    return fishes_schema.jsonify(all_fish)
 
 
 @app.route('/fish/<id>', methods=['GET'])
 def get_fish(id):
     fish = Fish.query.get(id)
+    if fish is None:
+        abort(404)
     return fish_schema.jsonify(fish)
 
 
 @app.route('/fish', methods=['POST'])
 def add_fish():
-    weight = request.json['weight_in_kg']
-    thermoregulation = request.json['thermoregulation']
-    lifetime = request.json['lifetime_years']
-    animal_type = request.json['animal_type']
-    required_aq_capacity = request.json['required_aquarium_capacity_liters']
-    required_temperature = request.json['required_temperature']
-    required_lighting_level = request.json['required_lighting_level']
-
-    new_fish = Fish(
-        weight, thermoregulation, lifetime, animal_type,
-        required_aq_capacity, required_temperature, required_lighting_level
-    )
-
+    params = fish_schema.load(request.json)
+    new_fish = Fish(**params)
     db.session.add(new_fish)
     db.session.commit()
 
@@ -85,9 +79,10 @@ def add_fish():
 
 @app.route('/fish/<id>', methods=['PUT'])
 def update_fish(id):
-
     fish = Fish.query.get(id)
-    for param in request.json:
+    if fish is None:
+        abort(404)
+    for param in fish_schema.load(request.json):
         setattr(fish, param, request.json[param])
     db.session.commit()
     return fish_schema.jsonify(fish)
@@ -96,6 +91,8 @@ def update_fish(id):
 @app.route('/fish/<id>', methods=['DELETE'])
 def delete_fish(id):
     fish = Fish.query.get(id)
+    if fish is None:
+        abort(404)
     db.session.delete(fish)
     db.session.commit()
 
