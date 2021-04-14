@@ -33,6 +33,7 @@ class Fish(db.Model):
 
 
 class FishSchema(ma.Schema):
+    id = fields.Int()
     weight_in_kg = fields.Float()
     thermoregulation = fields.String()
     lifetime_years = fields.Float()
@@ -82,7 +83,11 @@ def update_fish(id):
     fish = Fish.query.get(id)
     if fish is None:
         abort(404)
-    for param in fish_schema.load(request.json):
+    new_params = fish_schema.load(request.json)
+    if "id" in new_params:
+        abort(403)
+    print(new_params)
+    for param in new_params:
         setattr(fish, param, request.json[param])
     db.session.commit()
     return fish_schema.jsonify(fish)
