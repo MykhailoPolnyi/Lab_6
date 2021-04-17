@@ -1,7 +1,7 @@
 from flask import Flask, request, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
-from marshmallow import fields
+from marshmallow import fields, ValidationError
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://myk_user:fwQH-totF8Pv@localhost:3306/lab6'
@@ -43,8 +43,8 @@ class FishSchema(ma.Schema):
     required_lighting_level = fields.String()
 
 
-fish_schema = FishSchema()
-fishes_schema = FishSchema(many=True)
+fish_schema = FishSchema(exclude=["id"])
+fishes_schema = FishSchema(only=["id", "animal_type", "lifetime_years"], many=True)
 
 
 @app.route('/')
@@ -55,8 +55,6 @@ def hello_page():
 @app.route('/fish', methods=['GET'])
 def get_all_fish():
     all_fish = Fish.query.all()
-    if all_fish is None:
-        abort(404)
     return fishes_schema.jsonify(all_fish)
 
 
@@ -64,29 +62,31 @@ def get_all_fish():
 def get_fish(id):
     fish = Fish.query.get(id)
     if fish is None:
-        abort(404)
+        return abort(404)
     return fish_schema.jsonify(fish)
 
 
 @app.route('/fish', methods=['POST'])
 def add_fish():
-    params = fish_schema.load(request.json)
-    new_fish = Fish(**params)
+    try:
+        params = fish_schema.load(request.json)
+        new_fish = Fish(**params)
+    except:
+        return abort(400)
     db.session.add(new_fish)
     db.session.commit()
-
-    return fish_schema.jsonify(new_fish)
+    return fish_schema.jsonify(new_fish), 201
 
 
 @app.route('/fish/<id>', methods=['PUT'])
 def update_fish(id):
     fish = Fish.query.get(id)
     if fish is None:
-        abort(404)
-    new_params = fish_schema.load(request.json)
-    if "id" in new_params:
-        abort(403)
-    print(new_params)
+        return abort(404)
+    try:
+        new_params = fish_schema.load(request.json)
+    except ValidationError:
+        return abort(400)
     for param in new_params:
         setattr(fish, param, request.json[param])
     db.session.commit()
@@ -97,11 +97,10 @@ def update_fish(id):
 def delete_fish(id):
     fish = Fish.query.get(id)
     if fish is None:
-        abort(404)
+        return abort(404)
     db.session.delete(fish)
     db.session.commit()
-
-    return fish_schema.jsonify(fish)
+    return fish_schema.jsonify(fish), 204
 
 
 if __name__ == "__main__":
