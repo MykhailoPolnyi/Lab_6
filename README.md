@@ -7,8 +7,8 @@
 <h4>Requirements:</h4>
 <p>1.Python version - 3.x<br>
 2. REST-service should be created using web framework Flask<br>
-3. Second task should be completed using following technologies:<br>
+3. Second task should be completed using following technologies:
 
  - SQLAlchemy-1.1.15
  - MySQL-5.7 / MySQL-8.0
-<\p>
+
