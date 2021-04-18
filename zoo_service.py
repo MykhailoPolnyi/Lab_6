@@ -61,7 +61,7 @@ def get_all_fish():
 @app.route('/fish/<id>', methods=['GET'])
 def get_fish(id):
     fish = Fish.query.get(id)
-    if fish is None:
+    if not fish:
         return abort(404)
     return fish_schema.jsonify(fish)
 
@@ -81,7 +81,7 @@ def add_fish():
 @app.route('/fish/<id>', methods=['PUT'])
 def update_fish(id):
     fish = Fish.query.get(id)
-    if fish is None:
+    if not fish:
         return abort(404)
     try:
         new_params = fish_schema.load(request.json)
@@ -96,7 +96,7 @@ def update_fish(id):
 @app.route('/fish/<id>', methods=['DELETE'])
 def delete_fish(id):
     fish = Fish.query.get(id)
-    if fish is None:
+    if not fish:
         return abort(404)
     db.session.delete(fish)
     db.session.commit()
