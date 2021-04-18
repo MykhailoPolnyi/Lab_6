@@ -100,7 +100,7 @@ def delete_fish(id):
         return abort(404)
     DB.session.delete(fish_to_delete)
     DB.session.commit()
-    return FISH_SCHEMA.jsonify(fish_to_delete), 204
+    return FISH_SCHEMA.jsonify(fish_to_delete)
 
 
 if __name__ == "__main__":
