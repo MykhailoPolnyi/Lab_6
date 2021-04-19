@@ -5,6 +5,7 @@ from marshmallow import fields, ValidationError
 
 APP = Flask(__name__)
 APP.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://myk_user:fwQH-totF8Pv@localhost:3306/lab6'
+APP.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 DB = SQLAlchemy(APP)
 MA = Marshmallow(APP)
 
@@ -34,13 +35,13 @@ class Fish(DB.Model):
 
 class FishSchema(MA.Schema):
     id = fields.Int()
-    weight_in_kg = fields.Float()
-    thermoregulation = fields.String()
-    lifetime_years = fields.Float()
-    animal_type = fields.String()
-    required_aquarium_capacity_liters = fields.Integer()
-    required_temperature = fields.Integer()
-    required_lighting_level = fields.String()
+    weight_in_kg = fields.Float(required=True)
+    thermoregulation = fields.String(required=True)
+    lifetime_years = fields.Float(required=True)
+    animal_type = fields.String(required=True)
+    required_aquarium_capacity_liters = fields.Integer(required=True)
+    required_temperature = fields.Integer(required=True)
+    required_lighting_level = fields.String(required=True)
 
 
 FISH_SCHEMA = FishSchema(exclude=["id"])
@@ -87,8 +88,7 @@ def update_fish(id):
         new_deserialized_values = FISH_SCHEMA.load(request.json)
     except ValidationError:
         return abort(400)
-    for fish_obj_updated_field, incoming_deserialized_value in new_deserialized_values.items():
-        setattr(changed_fish, fish_obj_updated_field, incoming_deserialized_value)
+    changed_fish.__init__(**new_deserialized_values)
     DB.session.commit()
     return FISH_SCHEMA.jsonify(changed_fish)
 
